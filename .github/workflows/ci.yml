@@ -30,6 +30,7 @@ jobs:
 
       - name: Run tests
         run: |
+          npm ci  # Install all dependencies, including devDependencies
           npx playwright install --with-deps chromium
           npm run test:coverage
 
