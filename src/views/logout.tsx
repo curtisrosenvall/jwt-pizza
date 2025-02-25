@@ -17,7 +17,7 @@ export default function Logout(props: Props) {
       props.setUser(null);
       navigate('/');
     })();
-  }, []);
+  }, [props, navigate]);
 
   return (
     <View title="Logout">

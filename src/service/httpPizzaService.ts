@@ -56,12 +56,20 @@ class HttpPizzaService implements PizzaService {
   }
 
   async logout(): Promise<void> {
-    return new Promise(async (resolve) => {
+    try {
+      // Try to call the server logout endpoint
       await this.callEndpoint('/api/auth', 'DELETE');
+    } catch (error) {
+      // Log the error but continue with local logout
+      console.warn('Logout API call failed:', error);
+    } finally {
+      // Always clear local storage regardless of server response
       localStorage.removeItem('user');
       localStorage.removeItem('token');
-      resolve();
-    });
+    }
+    
+    // Return a resolved promise to complete the logout process
+    return Promise.resolve();
   }
 
   async getUser(): Promise<User | null> {
