@@ -38,7 +38,7 @@ test('register a new user', async ({ page }) => {
   await page.getByRole('button', { name: 'Register' }).click();
 
   // Wait for the API response to ensure registration is processed
-  await page.waitForResponse('https://pizza-service.startupcode.net/api/auth');
+  await page.waitForResponse('http://localhost:3000/api/auth');
 
   // Wait for the page to update after registration (e.g., navigation or UI changes)
   await page.waitForLoadState('networkidle');
