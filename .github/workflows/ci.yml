@@ -59,6 +59,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       version: ${{ needs.build.outputs.version || github.sha }}
+    environment:
+      name: production
+      url: https://pizza.startupcode.net
     steps:
       - name: Create OIDC token to AWS
         uses: aws-actions/configure-aws-credentials@v4
@@ -78,3 +81,54 @@ jobs:
           echo "Deploying $version"
           aws s3 cp dist/ s3://${{ secrets.APP_BUCKET }} --recursive
           aws cloudfront create-invalidation --distribution-id ${{ secrets.DISTRIBUTION_ID }} --paths "/*"
+
+  release:
+    needs:
+      - build
+      - deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required for creating GitHub releases
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for proper tagging
+
+      - name: Check for existing tag
+        id: check_tag
+        run: |
+          version="${{needs.build.outputs.version}}"
+          if git tag -l "version-$version" | grep -q "version-$version"; then
+            echo "Tag version-$version already exists"
+            echo "tag_exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag_exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Extract issue number from commit message
+        id: extract_issue
+        run: |
+          commit_message="${{ github.event.head_commit.message }}"
+          issue_number=$(echo "$commit_message" | grep -o '#[0-9]\+' | head -1 || echo "")
+          echo "issue_number=$issue_number" >> "$GITHUB_OUTPUT"
+
+      - name: Create Release
+        uses: ncipollo/release-action@2c591bcc8ecdcd2db72b97d6147f871fcd833ba5
+        env:
+          version: ${{needs.build.outputs.version}}
+        with:
+          tag: version-${{ env.version }}
+          name: Version ${{ env.version }}
+          body: |
+            ## 🚀 Changes
+            ${{ github.event.head_commit.message }}
+            
+            Fixes ${{ steps.extract_issue.outputs.issue_number }}
+            
+            The factory will no longer allow a pizza to be created if the store cannot represent that it has enough cheese to complete the order. If any pizza cannot be created with a full amount of cheese, then the entire order is rejected.
+
+            commit: ${{ github.sha }}
+          makeLatest: true
+          allowUpdates: true
+          generateReleaseNotes: false
