@@ -6,6 +6,7 @@ on:
         description: 'Version to release'
         required: true
       description:
+        description: 'Release description'
         required: true
 
 permissions:
@@ -34,7 +35,18 @@ jobs:
           aws cloudfront get-distribution-config --id ${{ secrets.DISTRIBUTION_ID }} > original.json
           etag=$(jq -r '.ETag' original.json)
           jq '.DistributionConfig' original.json > request.json
-          jq --arg version "/$version" '.Origins.Items[0].OriginPath = $version' request.json > finalRequest.json
+          
+          # Debug - Show original origin paths
+          echo "Original Origin Paths:"
+          jq -r '.Origins.Items[].OriginPath' request.json
+          
+          # Update all origins to use the same version
+          jq --arg version "/$version" '.Origins.Items[].OriginPath = $version' request.json > finalRequest.json
+          
+          # Debug - Show updated origin paths
+          echo "Updated Origin Paths:"
+          jq -r '.Origins.Items[].OriginPath' finalRequest.json
+          
           aws cloudfront update-distribution --id ${{ secrets.DISTRIBUTION_ID }} --if-match $etag --distribution-config file://finalRequest.json
 
           # Wait for the distribution to deploy and then invalidate the cache
