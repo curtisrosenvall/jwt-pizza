@@ -52,14 +52,45 @@ jobs:
           path: dist/
 
   security-scan:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Run Dastardly Action Step
-        uses: PortSwigger/dastardly-github-action@main
-        with:
-          target-url: 'https://pizza.startupcode.net'
+            name: Security Scan
+            runs-on: ubuntu-latest
+            needs: build
+            steps:
+              - name: Run Dastardly Action Step
+                uses: PortSwigger/dastardly-github-action@main
+                with:
+                  target-url: 'https://pizza.startupcode.net'
+                continue-on-error: true
+                id: dastardly
+        
+              - name: Upload Dastardly report
+                uses: actions/upload-artifact@v4
+                if: always()
+                with:
+                  name: dastardly-report
+                  path: |
+                    dastardly-report.xml
+                    scan-report.html
+          
+              - name: Check for vulnerabilities
+                if: steps.dastardly.outcome == 'success'
+                run: |
+                  if grep -q "<issue>" dastardly-report.xml; then
+                    echo "⚠️ Vulnerabilities found in the Dastardly scan!"
+                    grep -n "<issue>" dastardly-report.xml | head -5
+                    echo "Review the full report in the workflow artifacts."
+                  else
+                    echo "✅ No vulnerabilities found in the Dastardly scan."
+                  fi
+        
+              - name: Fail workflow if high severity vulnerabilities found
+                if: steps.dastardly.outcome == 'success'
+                run: |
+                  if grep -q 'severity="High"' dastardly-report.xml; then
+                    echo "❌ High severity vulnerabilities found! Failing the workflow."
+                    grep -n 'severity="High"' dastardly-report.xml
+                    exit 1
+                  fi
 
   deploy:
     needs: [build, security-scan]
@@ -116,7 +147,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch all history for proper tagging
+          fetch-depth: 0 
 
       - name: Check for existing tag
         id: check_tag
