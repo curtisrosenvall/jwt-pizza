@@ -4,7 +4,7 @@
 
 For my curiosity report, I decided to explore a topic we learned about in Deliverable 7: Continuous Integration and Continuous Deployment (CI/CD). Prior to this class, my startup in the ecommerce space had been using a manual deployment process, where we wrote code locally and then transferred files to our virtual machine hosted on Azure. This approach was time-consuming and error-prone, so I decided to implement a more efficient workflow.
 
-![Deliverable 7](https://github.com/curtisrosenvall/jwt-pizza/blob/main/curiositiReport/7.png)
+![Deliverable 7](https://github.com/curtisrosenvall/jwt-pizza/blob/main/curiosityReport/7.png)
 
 
 ## What I Learned
